@@ -25,8 +25,10 @@ public class SpeedMod implements ModInitializer {
 
     // ========== НАСТРОЙКИ ==========
     private static final float RANGE = 4.2f;
-    private static final long MIN_DELAY = 690L;   // изменено с 750 на 690
-    private static final long MAX_DELAY = 760L;   // изменено с 850 на 760
+    private static final long MIN_DELAY = 690L;   // 0.69 сек
+    private static final long MAX_DELAY = 760L;   // 0.76 сек
+    private static final float MICRO_NOISE_YAW = 0.3f;   // микро-дрожание по горизонтали (градусы)
+    private static final float MICRO_NOISE_PITCH = 0.2f; // микро-дрожание по вертикали
 
     @Override
     public void onInitialize() {
@@ -38,7 +40,7 @@ public class SpeedMod implements ModInitializer {
                 boolean currentR = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_R) == GLFW.GLFW_PRESS;
                 if (currentR && !lastR) {
                     killaura = !killaura;
-                    mc.player.sendMessage(Text.literal(killaura ? "§aKillaura (TSAngle) ON" : "§cKillaura OFF"), true);
+                    mc.player.sendMessage(Text.literal(killaura ? "§aKillaura (TSAngle + MicroShake) ON" : "§cKillaura OFF"), true);
                     if (!killaura) target = null;
                     try { Thread.sleep(200); } catch (InterruptedException ignored) {}
                 }
@@ -69,19 +71,27 @@ public class SpeedMod implements ModInitializer {
         Turns current = new Turns(mc.player.getYaw(), mc.player.getPitch());
         Turns targetAngles = new Turns(idealYaw, idealPitch);
 
-        // Применяем ротацию TSAngle
+        // Применяем ротацию TSAngle (уже содержит случайность в скорости)
         Turns newAngles = rotator.limitAngleChange(current, targetAngles, to, target);
-        mc.player.setYaw(newAngles.getYaw());
-        mc.player.setPitch(newAngles.getPitch());
-        mc.player.headYaw = newAngles.getYaw();
-        mc.player.bodyYaw = newAngles.getYaw();
+
+        // Добавляем микро-шум (имитация дрожи мыши) — только когда цель есть
+        float noiseYaw = (random.nextFloat() - 0.5f) * MICRO_NOISE_YAW;
+        float noisePitch = (random.nextFloat() - 0.5f) * MICRO_NOISE_PITCH;
+        float finalYaw = wrap(newAngles.getYaw() + noiseYaw);
+        float finalPitch = clamp(newAngles.getPitch() + noisePitch, -89, 89);
+
+        // Применяем углы с шумом
+        mc.player.setYaw(finalYaw);
+        mc.player.setPitch(finalPitch);
+        mc.player.headYaw = finalYaw;
+        mc.player.bodyYaw = finalYaw;
 
         // Атака с задержкой
         long now = System.currentTimeMillis();
         long delay = MIN_DELAY + (long)(random.nextDouble() * (MAX_DELAY - MIN_DELAY));
         // Проверка, достаточно ли близко к цели (угол)
-        float deltaYaw = wrap(idealYaw - mc.player.getYaw());
-        float deltaPitch = idealPitch - mc.player.getPitch();
+        float deltaYaw = wrap(idealYaw - finalYaw);
+        float deltaPitch = idealPitch - finalPitch;
         boolean canAttack = Math.abs(deltaYaw) < 15f && Math.abs(deltaPitch) < 15f;
         if (now - lastAttackTime >= delay && canAttack) {
             boolean wasSprinting = mc.player.isSprinting();
@@ -116,7 +126,7 @@ public class SpeedMod implements ModInitializer {
     private static float wrap(float v) { v %= 360f; if (v >= 180f) v -= 360f; if (v < -180f) v += 360f; return v; }
     private static float clamp(float v, float min, float max) { return Math.max(min, Math.min(max, v)); }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ ДЛЯ РОТАЦИИ ==========
+    // ========== ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ ДЛЯ РОТАЦИИ (TSAngle) ==========
     static class Turns {
         private float yaw, pitch;
         public Turns(float yaw, float pitch) { this.yaw = yaw; this.pitch = pitch; }
