@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "id": "speedmod",
   "version": "1.0.0",
-  "name": "Speed Mod",
-  "description": "",
+  "name": "Grim Fly Disabler",
+  "description": "GrimAC Fly bypass",
   "authors": [],
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "main": ["com.example.speed.SpeedMod"]
+    "main": ["com.example.speed.GrimFlyMod"]
   },
   "mixins": ["mixins.speedmod.json"],
   "depends": {
