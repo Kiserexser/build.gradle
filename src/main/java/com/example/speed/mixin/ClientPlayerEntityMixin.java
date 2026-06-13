@@ -57,7 +57,7 @@ public class ClientPlayerEntityMixin {
         boolean sendOnGround = forceReal ? player.isOnGround() : true;
 
         PlayerMoveC2SPacket.PositionAndOnGround packet = new PlayerMoveC2SPacket.PositionAndOnGround(
-                player.getX(), sendY, player.getZ(), sendOnGround
+                player.getX(), sendY, player.getZ(), sendOnGround, true
         );
         if (mc.getNetworkHandler() != null) {
             mc.getNetworkHandler().sendPacket(packet);
