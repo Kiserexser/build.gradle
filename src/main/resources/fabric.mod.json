@@ -10,6 +10,7 @@
   "entrypoints": {
     "main": ["com.example.speed.SpeedMod"]
   },
+  "mixins": ["mixins.speedmod.json"],
   "depends": {
     "fabricloader": ">=0.15.11",
     "minecraft": "1.21.4"
